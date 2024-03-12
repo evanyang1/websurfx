@@ -9,7 +9,6 @@ use mlua::Lua;
 use std::{collections::HashMap, fs, thread::available_parallelism};
 
 /// A named struct which stores the parsed config file options.
-#[derive(Clone)]
 pub struct Config {
     /// It stores the parsed port number option on which the server should launch.
     pub port: u16,
@@ -30,6 +29,8 @@ pub struct Config {
     pub logging: bool,
     /// It stores the option to whether enable or disable debug mode.
     pub debug: bool,
+    /// It toggles whether to use adaptive HTTP windows
+    pub adaptive_window: bool,
     /// It stores all the engine names that were enabled by the user.
     pub upstream_search_engines: HashMap<String, bool>,
     /// It stores the time (secs) which controls the server request timeout.
@@ -68,6 +69,7 @@ impl Config {
 
         let debug: bool = globals.get::<_, bool>("debug")?;
         let logging: bool = globals.get::<_, bool>("logging")?;
+        let adaptive_window: bool = globals.get::<_, bool>("adaptive_window")?;
 
         if !logging_initialized {
             set_logging_level(debug, logging);
@@ -98,6 +100,7 @@ impl Config {
 
         #[cfg(any(feature = "redis-cache", feature = "memory-cache"))]
         let parsed_cet = globals.get::<_, u16>("cache_expiry_time")?;
+        #[cfg(any(feature = "redis-cache", feature = "memory-cache"))]
         let cache_expiry_time = match parsed_cet {
             0..=59 => {
                 log::error!(
@@ -124,6 +127,7 @@ impl Config {
             },
             logging,
             debug,
+            adaptive_window,
             upstream_search_engines: globals
                 .get::<_, HashMap<String, bool>>("upstream_search_engines")?,
             request_timeout: globals.get::<_, u8>("request_timeout")?,
